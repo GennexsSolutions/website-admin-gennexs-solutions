@@ -30,12 +30,10 @@ function SlideBar() {
             <Sider trigger={null} collapsible collapsed={collapsed}>
                 <div className="demo-logo-vertical" />
                 <div className="flex items-center justify-center pt-10">
-                <img className=" w-20 p-2  rounded-full" src={logo} alt="Image" />
-
-                    <h1 className="text-white font-bold">Gennex Solutions</h1>
+                    <img className=" w-20 p-2  rounded-full" src={logo} alt="Image" />
+                    <h1 className="text-white font-bold text-xl">Gennex Solutions</h1>
                 </div>
-                <Divider className='bg-white'/>
-
+                <Divider className='bg-white' />
                 <Menu
                     theme="dark"
                     mode="inline"
