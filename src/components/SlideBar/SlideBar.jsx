@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Button, Layout, Menu, theme } from 'antd';
+import { Button, Layout, Menu, theme, Divider } from 'antd';
+import logo from '../../assets/images/logo.jpeg'
 import { useNavigate } from 'react-router-dom';
 import {
     MenuFoldOutlined,
@@ -28,6 +29,13 @@ function SlideBar() {
         <Layout className='h-screen'>
             <Sider trigger={null} collapsible collapsed={collapsed}>
                 <div className="demo-logo-vertical" />
+                <div className="flex items-center justify-center pt-10">
+                <img className=" w-20 p-2  rounded-full" src={logo} alt="Image" />
+
+                    <h1 className="text-white font-bold">Gennex Solutions</h1>
+                </div>
+                <Divider className='bg-white'/>
+
                 <Menu
                     theme="dark"
                     mode="inline"
