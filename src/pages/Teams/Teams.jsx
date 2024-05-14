@@ -1,35 +1,60 @@
-import React, { useState } from 'react'
-import { Table, Button, Modal, Input } from 'antd';
+import React, { useState,useEffect } from 'react'
+import { Table, Button, Modal, Input,Form } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import { Image, Upload } from 'antd';
+import axios from 'axios';
 
-const getBase64 = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
-  });
 
 function Teams() {
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewImage, setPreviewImage] = useState('');
-  const [fileList, setFileList] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [setdata, setData] = useState([]);
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+  const [deleteItemId, setDeleteItemId] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     position: '',
     image: '',
   });
 
-  const handlePreview = async (file) => {
-    if (!file.url && !file.preview) {
-      file.preview = await getBase64(file.originFileObj);
-    }
-    setPreviewImage(file.url || file.preview);
-    setPreviewOpen(true);
+
+  const handleImage1 = (e) => {
+    const file = e.target.files[0];
+    setFormData({
+      ...formData,
+      image: file,
+    });
   };
-  const handleChangeImages = ({ fileList: newFileList }) => setFileList(newFileList);
+  const handleChangeValue = (changedValues) => {
+    // Update the form data when any field changes
+    setFormData({
+      ...formData,
+      ...changedValues,
+    });
+  };
+
+  const getData = async()=>{
+    axios.get('https://api-website-admin-gennexsolutions.onrender.com/teams/getData')
+    .then((res) => {
+      console.log(res.data.data);
+      setData(res.data.data);
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+  }
+
+  useEffect(() => {
+   getData()
+  },[]);
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmVisible(false);
+  };
+
+  const showDeleteConfirm = (itemId) => {
+    setDeleteItemId(itemId);
+    setDeleteConfirmVisible(true);
+  };
+
   const uploadButton = (
     <button
       style={{
@@ -53,48 +78,67 @@ function Teams() {
     console.log('Update record with key:', key);
   };
 
-  const handleDelete = (key) => {
-    console.log('Delete record with key:', key);
-  };
+
 
   const handleShowdialog = () => {
     setIsModalVisible(true);
   };
 
-  const handleOk = () => {
-    setIsModalVisible(false);
+  const handleOk =async (event) => {
+    event.preventDefault();
+    try {
+        const formDataTosend = new FormData();
+        formDataTosend.append("name", formData.name);
+        formDataTosend.append("position", formData.position);
+        formDataTosend.append("image", formData.image);
+        const headers = {
+            'Content-Type': 'multipart/form-data',
+        };
+        const response = await axios.post('https://api-website-admin-gennexsolutions.onrender.com/teams/insertTeams', formData, { headers });
+        console.log('Response:', response.data.data);
+        getData();
+        setIsModalVisible(false);
+    } catch (error) {
+        console.error('Error:', error);
+    }
   };
 
   const handleCancel = () => {
     setIsModalVisible(false);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-  };
 
-  const handleSubmit = () => {
-    // Here you can perform any action you want with the form data, like submitting it or updating the state
-    console.log('Form Data:', formData);
-    setIsModalVisible(false);
-  };
 
   const columns = [
     {
       title: 'ຊື່',
       dataIndex: 'name',
+      render: (text) => (
+        <div>
+            <a>{text}</a>
+        </div>
+    ),
     },
     {
       title: 'ຕ່ຳແໜ່ງ',
       dataIndex: 'position',
+      render: (text) => (
+        <div>
+            <a>{text}</a>
+        </div>
+    ),
     },
     {
       title: 'ຮູບພາບ',
       dataIndex: 'image',
+      render: (image) => (
+        <img
+            className='rounded-full h-20 w-20'
+            src={`https://api-website-admin-gennexsolutions.onrender.com/${image}`}
+            alt='image'
+            onClick={() => handlePreview(image)}
+        />
+    )
     },
     {
       title: 'Actions',
@@ -102,27 +146,34 @@ function Teams() {
       render: (text, record) => (
         <span>
           <Button onClick={() => handleUpdate(record.key)} type="primary" style={{ marginRight: 8 }}>ແກ້ໄຂ</Button>
-          <Button onClick={() => handleDelete(record.key)} type="default" style={{ color: '#ff0000' }}>ລົບ</Button>
+          <Button onClick={() => showDeleteConfirm(record._id)} type="default" style={{ color: '#ff0000' }}>ລົບ</Button>
         </span>
       ),
     },
   ];
 
-  const data = [
-    {
-      key: '1',
-      name: "Hiiiiiii",
-      position: "Hiiiiiii",
-      image: "",
+  const handleDelete = async () => {
+    try {
+        // Send a DELETE request with Axios using the deleteItemId
+        await axios.delete(
+            `https://api-website-admin-gennexsolutions.onrender.com/teams/delete/${deleteItemId}`
+        );
 
-    },
-    {
-      key: '2',
-      name: "Hiiiiiii",
-      position: "Hiiiiiii",
-      image: "mission",
-    },
-  ];
+        // Handle success, e.g., show a success message or update the data
+        console.log("Data deleted successfully!");
+
+        // Close the delete confirmation modal
+        setDeleteConfirmVisible(false);
+
+        // Fetch data again or update the state to reflect the changes
+        getData();
+    } catch (error) {
+        // Handle error, e.g., show an error message
+        console.error("Error deleting data:", error);
+    }
+};
+
+
 
   const onChange = (pagination, filters, sorter, extra) => {
     console.log('params', pagination, filters, sorter, extra);
@@ -132,59 +183,49 @@ function Teams() {
     <Button onClick={handleShowdialog} type="primary" style={{ marginBottom: 16 }}>
       ເພີ່ມຂໍ້ມູນ
     </Button>
-    <Table columns={columns} dataSource={data} onChange={onChange} />
+    <Table columns={columns} dataSource={setdata} onChange={onChange} />
     <Modal
       title="ເພີ່ມຂໍ້ມູນໃໝ່"
       visible={isModalVisible}
-      onOk={handleSubmit}
+      onOk={handleOk}
       onCancel={handleCancel}
     >
-      <div className='pb-4'>
-        <h1>ຊື່</h1>
-        <Input
-          placeholder="ຊື່"
-          name="name"
-          value={formData.name}
-          onChange={handleInputChange}
-        />
-      </div>
-      <div className='pb-4'>
-        <h1>ຕ່ຳແໜ່ງ</h1>
-        <Input
-          placeholder="ຕ່ຳແໜ່ງ"
-          name="position"
-          value={formData.position}
-          onChange={handleInputChange}
-        />
-      </div>
-      <div className='pb-4'>
-        <h1>ຮູບພາບ</h1>
-        <Upload
-          action="https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload"
-          listType="picture-circle"
-          fileList={fileList}
-          onPreview={handlePreview}
-          onChange={handleChangeImages}
-          className='pt-10'
-        >
-          {fileList.length >= 8 ? null : uploadButton}
-        </Upload>
-        {previewImage && (
-          <Image
-            wrapperStyle={{
-              display: 'none',
-            }}
-            preview={{
-              visible: previewOpen,
-              onVisibleChange: (visible) => setPreviewOpen(visible),
-              afterOpenChange: (visible) => !visible && setPreviewImage(''),
-            }}
-            src={previewImage}
-          />
-        )}
-      </div>
+       <Form layout="vertical"
+          name="wrap"
+          labelAlign="left"
+          labelWrap
+          colon={false}
+          onValuesChange={handleChangeValue} >
+          <Form.Item label="ຊື່" name="name" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item label="ຕຳແໜ່ງ" name="position" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+
+          <Form.Item label="ຮູບພາບ">
+            <input type="file" name="image" onChange={handleImage1} />
+          </Form.Item>
+        </Form>
 
     </Modal>
+
+    <Modal
+        title="ແຈ້ງເຕືອນ"
+        visible={deleteConfirmVisible}
+        onCancel={handleCancelDelete}
+        footer={[
+          <Button key="cancel" onClick={handleCancelDelete}>
+            ບໍ່! ຕົກລົງ
+          </Button>,
+          <Button key="delete" type="primary" danger onClick={handleDelete}>
+            ຕົກລົງ
+          </Button>,
+        ]}
+        destroyOnClose={true}
+      >
+        ທ່ານຕ້ອງການທີ່ຈະລົບຂໍ້ມູນນີ້ແທ້ ຫຼື ບໍ່?
+      </Modal>
   </div>
   )
 }

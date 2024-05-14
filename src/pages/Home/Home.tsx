@@ -1,121 +1,124 @@
-import React, { useState } from 'react';
-import { Table, Button, Modal, Input } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
-import { Image, Upload } from 'antd';
-const getBase64 = (file) =>
-    new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = (error) => reject(error);
-    });
+import React, { useEffect, useState } from 'react';
+import { Table, Button, Modal, Input, Form } from 'antd';
+
+import axios from 'axios';
+
 
 function Home() {
-    const [previewOpen, setPreviewOpen] = useState(false);
-    const [previewImage, setPreviewImage] = useState('');
-    const [fileList, setFileList] = useState([]);
+    let currenPage = 1;
 
-    const handlePreview = async (file) => {
-        if (!file.url && !file.preview) {
-            file.preview = await getBase64(file.originFileObj);
-        }
-        setPreviewImage(file.url || file.preview);
-        setPreviewOpen(true);
+    const [data, setData] = useState([]);
+
+    const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+    const [deleteItemId, setDeleteItemId] = useState(null);
+    const [formData, setFormData] = useState({
+        description: "",
+        image: '',
+
+    });
+
+    const handleImage1 = (e) => {
+        const file = e.target.files[0];
+        setFormData({
+            ...formData,
+            image: file,
+        });
     };
-    const handleChangeImages = ({ fileList: newFileList }) => setFileList(newFileList);
-    const uploadButton = (
-        <button
-            style={{
-                border: 0,
-                background: 'none',
-            }}
-            type="button"
-        >
-            <PlusOutlined />
-            <div
-                style={{
-                    marginTop: 8,
-                }}
-            >
-                ເລືອກຮູບພາບ
-            </div>
-        </button>
-    );
-    const [data, setData] = useState([
-        {
-            key: '1',
-            name: 'John Brown',
-            image: ""
-        },
-        {
-            key: '2',
-            name: 'Jim Green',
-            image: ""
-        },
-        {
-            key: '3',
-            name: 'Joe Black',
-            image: ""
-        },
-        {
-            key: '4',
-            name: 'Jim Red',
-            image: ""
+    const handleChangeValue = (changedValues) => {
+        // Update the form data when any field changes
+        setFormData({
+            ...formData,
+            ...changedValues,
+        });
+    };
 
-        },
-    ]);
+
+
+    //get Data From API
+    useEffect(() => {
+        getData()
+
+    }, []);
+
+
+    const getData = async () => {
+        axios.get('https://api-website-admin-gennexsolutions.onrender.com/home/getData')
+            .then((res) => {
+                console.log(res.data.data);
+                setData(res.data.data);
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+
+    }
+
+
+
+
+
 
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [newData, setNewData] = useState({
-        name: '',
-        image: '', // Adding image field
-    });
+
 
     const handleAddItem = () => {
         setIsModalVisible(true);
     };
 
-    const handleOk = () => {
-        // Add new data to the state
-        setData([...data, { key: (data.length + 1).toString(), ...newData }]);
-        // Reset newData state and hide modal
-        setNewData({
-            name: '',
-            image: '', // Reset image field
-        });
-        setIsModalVisible(false);
+    const handleOk = async (event) => {
+        event.preventDefault();
+        try {
+            const formDataTosend = new FormData();
+            formDataTosend.append("description", formData.description);
+            formDataTosend.append("image", formData.image);
+            const headers = {
+                'Content-Type': 'multipart/form-data',
+            };
+            const response = await axios.post('https://api-website-admin-gennexsolutions.onrender.com/home/insertHome', formData, { headers });
+            console.log('Response:', response.data.data);
+            setIsModalVisible(false);
+        } catch (error) {
+            console.error('Error:', error);
+        }
+
     };
 
     const handleCancel = () => {
-        // Reset newData state and hide modal
-        setNewData({
-            name: '',
-            image: '', // Reset image field
-        });
+
         setIsModalVisible(false);
     };
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setNewData({ ...newData, [name]: value });
-    };
+
 
     const columns = [
         {
             title: 'ຂໍ້ມູນ',
-            dataIndex: 'name',
+            dataIndex: 'description',
+            render: (text) => (
+                <div>
+                    <a>{text}</a>
+                </div>
+            ),
         },
         {
             title: 'ຮູບພາບ',
-            dataIndex: 'image', // Display image field in table
+            dataIndex: 'image',
+            render: (image) => (
+                <img
+                    className='rounded-full h-20 w-20'
+                    src={`https://api-website-admin-gennexsolutions.onrender.com/${image}`}
+                    alt='image'
+                />
+            )
         },
+
         {
             title: 'Actions',
             dataIndex: 'actions',
             render: (text, record) => (
                 <span>
                     <Button onClick={() => handleUpdate(record.key)} type="primary" style={{ marginRight: 8 }}>ແກ້ໄຂ</Button>
-                    <Button onClick={() => handleDelete(record.key)} type="default" style={{ color: '#ff0000' }}>ລົບ</Button>
+                    <Button onClick={() => showDeleteConfirm(record._id)} type="default" style={{ color: '#ff0000' }}>ລົບ</Button>
                 </span>
             ),
         },
@@ -126,15 +129,45 @@ function Home() {
         console.log('Update record with key:', key);
     };
 
-    const handleDelete = (key) => {
-        // Logic to delete the record with the given key
-        setData(data.filter(item => item.key !== key));
-        console.log('Delete record with key:', key);
+
+    const handleDelete = async () => {
+        try {
+            // Send a DELETE request with Axios using the deleteItemId
+            await axios.delete(
+                `https://api-website-admin-gennexsolutions.onrender.com/home/delete/${deleteItemId}`
+            );
+
+            // Handle success, e.g., show a success message or update the data
+            console.log("Data deleted successfully!");
+
+            // Close the delete confirmation modal
+            setDeleteConfirmVisible(false);
+
+            // Fetch data again or update the state to reflect the changes
+            getData();
+        } catch (error) {
+            // Handle error, e.g., show an error message
+            console.error("Error deleting data:", error);
+        }
     };
+
+
 
     const onChange = (pagination, filters, sorter, extra) => {
         console.log('params', pagination, filters, sorter, extra);
     };
+
+    const handleCancelDelete = () => {
+        setDeleteConfirmVisible(false);
+    };
+
+    const showDeleteConfirm = (itemId) => {
+        setDeleteItemId(itemId);
+        setDeleteConfirmVisible(true);
+    };
+
+
+
 
     return (
         <div>
@@ -142,7 +175,11 @@ function Home() {
                 ເພີ່ມຂໍ້ມູນ
             </Button>
 
-            <Table columns={columns} dataSource={data} onChange={onChange} />
+            <Table columns={columns} dataSource={data} onChange={onChange} pagination={{
+                onChange: (page) => {
+                    currenPage = page;
+                },
+            }} />
 
             <Modal
                 title="ເພີ່ມຂໍ້ມູນໃໝ່"
@@ -150,30 +187,36 @@ function Home() {
                 onOk={handleOk}
                 onCancel={handleCancel}
             >
-                <Input placeholder="ລາຍລະອຽດ" name="name" value={newData.name} onChange={handleChange} />
-                <Upload
-                    action="https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload"
-                    listType="picture-circle"
-                    fileList={fileList}
-                    onPreview={handlePreview}
-                    onChange={handleChangeImages}
-                    className='pt-10'
-                >
-                    {fileList.length >= 8 ? null : uploadButton}
-                </Upload>
-                {previewImage && (
-                    <Image
-                        wrapperStyle={{
-                            display: 'none',
-                        }}
-                        preview={{
-                            visible: previewOpen,
-                            onVisibleChange: (visible) => setPreviewOpen(visible),
-                            afterOpenChange: (visible) => !visible && setPreviewImage(''),
-                        }}
-                        src={previewImage}
-                    />
-                )}
+                <Form layout="vertical"
+                    name="wrap"
+                    labelAlign="left"
+                    labelWrap
+                    colon={false}
+                    onValuesChange={handleChangeValue} >
+                    <Form.Item label="ຊື່ຂໍ້ມູນ" name="description" rules={[{ required: true }]}>
+                        <Input />
+                    </Form.Item>
+
+                    <Form.Item label="ຮູບພາບ">
+                        <input type="file" name="logo_en" onChange={handleImage1} />
+                    </Form.Item>
+                </Form>
+            </Modal>
+            <Modal
+                title="ແຈ້ງເຕືອນ"
+                visible={deleteConfirmVisible}
+                onCancel={handleCancelDelete}
+                footer={[
+                    <Button key="cancel" onClick={handleCancelDelete}>
+                        ບໍ່! ຕົກລົງ
+                    </Button>,
+                    <Button key="delete" type="primary" danger onClick={handleDelete}>
+                        ຕົກລົງ
+                    </Button>,
+                ]}
+                destroyOnClose={true}
+            >
+                ທ່ານຕ້ອງການທີ່ຈະລົບຂໍ້ມູນນີ້ແທ້ ຫຼື ບໍ່?
             </Modal>
         </div>
     );
