@@ -1,29 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Modal, Input, Form } from 'antd';
-
 import axios from 'axios';
-
 
 function Home() {
     let currenPage = 1;
 
     const [data, setData] = useState([]);
-
     const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
     const [deleteItemId, setDeleteItemId] = useState(null);
     const [formData, setFormData] = useState({
         description: "",
         image: '',
-
     });
 
     const handleImage1 = (e) => {
         const file = e.target.files[0];
-        setFormData({
-            ...formData,
-            image: file,
-        });
+        const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+
+        if (file && validImageTypes.includes(file.type)) {
+            setFormData({
+                ...formData,
+                image: file,
+            });
+        } else {
+            alert("Please select a valid image file (jpg, jpeg, png).");
+        }
     };
+
     const handleChangeValue = (changedValues) => {
         // Update the form data when any field changes
         setFormData({
@@ -32,34 +35,22 @@ function Home() {
         });
     };
 
-
-
-    //get Data From API
+    // Get Data From API
     useEffect(() => {
         getData()
-
     }, []);
 
-
     const getData = async () => {
-        axios.get('https://api-website-admin-gennexsolutions.onrender.com/home/getData')
-            .then((res) => {
-                console.log(res.data.data);
-                setData(res.data.data);
-            })
-            .catch((err) => {
-                console.log(err);
-            });
-
+        try {
+            const res = await axios.get('https://api-website-admin-gennexsolutions.onrender.com/home/getData');
+            console.log("dataAll==="+res.data.data);
+            setData(res.data.data);
+        } catch (err) {
+            console.log(err);
+        }
     }
 
-
-
-
-
-
     const [isModalVisible, setIsModalVisible] = useState(false);
-
 
     const handleAddItem = () => {
         setIsModalVisible(true);
@@ -68,27 +59,26 @@ function Home() {
     const handleOk = async (event) => {
         event.preventDefault();
         try {
-            const formDataTosend = new FormData();
-            formDataTosend.append("description", formData.description);
-            formDataTosend.append("image", formData.image);
+            const formDataToSend = new FormData();
+            formDataToSend.append("description", formData.description);
+            formDataToSend.append("image", formData.image);
+
             const headers = {
                 'Content-Type': 'multipart/form-data',
             };
-            const response = await axios.post('https://api-website-admin-gennexsolutions.onrender.com/home/insertHome', formData, { headers });
-            console.log('Response:', response.data.data);
+
+            const response = await axios.post('https://api-website-admin-gennexsolutions.onrender.com/home/insertHome', formDataToSend, { headers });
+            console.log('Response======', response.data.data);
             setIsModalVisible(false);
+            getData();
         } catch (error) {
             console.error('Error:', error);
         }
-
     };
 
     const handleCancel = () => {
-
         setIsModalVisible(false);
     };
-
-
 
     const columns = [
         {
@@ -106,12 +96,11 @@ function Home() {
             render: (image) => (
                 <img
                     className='rounded-full h-20 w-20'
-                    src={`https://api-website-admin-gennexsolutions.onrender.com/${image}`}
+                    src={`https://api-website-admin-gennexsolutions.onrender.com${image}`}
                     alt='image'
                 />
             )
         },
-
         {
             title: 'Actions',
             dataIndex: 'actions',
@@ -129,29 +118,16 @@ function Home() {
         console.log('Update record with key:', key);
     };
 
-
     const handleDelete = async () => {
         try {
-            // Send a DELETE request with Axios using the deleteItemId
-            await axios.delete(
-                `https://api-website-admin-gennexsolutions.onrender.com/home/delete/${deleteItemId}`
-            );
-
-            // Handle success, e.g., show a success message or update the data
+            await axios.delete(`https://api-website-admin-gennexsolutions.onrender.com/home/delete/${deleteItemId}`);
             console.log("Data deleted successfully!");
-
-            // Close the delete confirmation modal
             setDeleteConfirmVisible(false);
-
-            // Fetch data again or update the state to reflect the changes
             getData();
         } catch (error) {
-            // Handle error, e.g., show an error message
             console.error("Error deleting data:", error);
         }
     };
-
-
 
     const onChange = (pagination, filters, sorter, extra) => {
         console.log('params', pagination, filters, sorter, extra);
@@ -166,12 +142,9 @@ function Home() {
         setDeleteConfirmVisible(true);
     };
 
-
-
-
     return (
         <div>
-            <Button onClick={handleAddItem} type="primary" style={{ marginBottom: 16, backgroundColor: '' }}>
+            <Button onClick={handleAddItem} type="primary" style={{ marginBottom: 16 }}>
                 ເພີ່ມຂໍ້ມູນ
             </Button>
 
@@ -192,16 +165,17 @@ function Home() {
                     labelAlign="left"
                     labelWrap
                     colon={false}
-                    onValuesChange={handleChangeValue} >
+                    onValuesChange={handleChangeValue}>
                     <Form.Item label="ຊື່ຂໍ້ມູນ" name="description" rules={[{ required: true }]}>
                         <Input />
                     </Form.Item>
 
                     <Form.Item label="ຮູບພາບ">
-                        <input type="file" name="logo_en" onChange={handleImage1} />
+                        <input type="file" accept=".jpg,.jpeg,.png" onChange={handleImage1} />
                     </Form.Item>
                 </Form>
             </Modal>
+
             <Modal
                 title="ແຈ້ງເຕືອນ"
                 visible={deleteConfirmVisible}
