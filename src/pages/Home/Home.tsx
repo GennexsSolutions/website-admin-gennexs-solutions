@@ -3,7 +3,7 @@ import { Table, Button, Modal, Input, Form } from 'antd';
 import axios from 'axios';
 
 function Home() {
-    let currenPage = 1;
+    let currentPage = 1;
 
     const [data, setData] = useState([]);
     const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
@@ -28,27 +28,25 @@ function Home() {
     };
 
     const handleChangeValue = (changedValues) => {
-        // Update the form data when any field changes
         setFormData({
             ...formData,
             ...changedValues,
         });
     };
 
-    // Get Data From API
     useEffect(() => {
-        getData()
+        getData();
     }, []);
 
     const getData = async () => {
         try {
             const res = await axios.get('https://api-website-admin-gennexsolutions.onrender.com/home/getData');
-            console.log("dataAll==="+res.data.data);
+            console.log("dataAll===", res.data.data);
             setData(res.data.data);
         } catch (err) {
             console.log(err);
         }
-    }
+    };
 
     const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -96,7 +94,7 @@ function Home() {
             render: (image) => (
                 <img
                     className='rounded-full h-20 w-20'
-                    src={`https://api-website-admin-gennexsolutions.onrender.com${image}`}
+                    src={image}
                     alt='image'
                 />
             )
@@ -114,7 +112,6 @@ function Home() {
     ];
 
     const handleUpdate = (key) => {
-        // Logic to open a modal or navigate to a page for updating the record with the given key
         console.log('Update record with key:', key);
     };
 
@@ -150,7 +147,7 @@ function Home() {
 
             <Table columns={columns} dataSource={data} onChange={onChange} pagination={{
                 onChange: (page) => {
-                    currenPage = page;
+                    currentPage = page;
                 },
             }} />
 
