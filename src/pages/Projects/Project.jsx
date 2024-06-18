@@ -139,7 +139,7 @@ function Project() {
       render: (image) => (
         <img
           className='rounded-full h-20 w-20'
-          src={`https://api-website-admin-gennexsolutions.onrender.com/${image}`}
+          src={`https://api-website-admin-gennexsolutions.onrender.com/images/${image}`}
           alt='image'
           onClick={() => handlePreview(image)}
         />

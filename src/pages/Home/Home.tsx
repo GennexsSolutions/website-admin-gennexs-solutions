@@ -91,13 +91,19 @@ function Home() {
         {
             title: 'ຮູບພາບ',
             dataIndex: 'image',
-            render: (image) => (
-                <img
-                    className='rounded-full h-20 w-20'
-                    src={image}
-                    alt='image'
-                />
-            )
+            render: (images) => {
+                const imageUrl = `https://api-website-admin-gennexsolutions.onrender.com/images/${images}`;
+                const isValidImage = images && images.startsWith(''); // assuming valid images start with '/uploads/'
+                return isValidImage ? (
+                    <img
+                        className='rounded-full h-20 w-20'
+                        src={imageUrl}
+                        alt='image'
+                    />
+                ) : (
+                    <span>No image available</span>
+                );
+            },
         },
         {
             title: 'Actions',
@@ -110,6 +116,7 @@ function Home() {
             ),
         },
     ];
+    
 
     const handleUpdate = (key) => {
         console.log('Update record with key:', key);
